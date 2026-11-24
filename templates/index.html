@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>GBP Post Writer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f2f5f3; --surface: #ffffff; --sunken: #e8eeea;
+    --ink: #14231f; --ink-2: #4a5c56;
+    --line: #d3dbd7; --line-strong: #b7c3be;
+    --brand: #0e6b5e; --brand-ink: #ffffff;
+    --mark: rgba(255, 228, 92, .95); --mark-solid: #ffe45c; --mark-ink: #14231f;
+    --warn: #7a5200; --warn-bg: #fff0c2;
+    --bad: #a8231b; --bad-bg: #fce4e1;
+    --good-bg: #dff1ec;
+    --r-sm: 6px; --r-lg: 14px;
+    --font: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0e1715; --surface: #15211e; --sunken: #1c2a26;
+      --ink: #e4ede9; --ink-2: #9db1aa;
+      --line: #2a3b36; --line-strong: #3b4f49;
+      --brand: #46c9b1; --brand-ink: #08201b;
+      --mark: rgba(230, 205, 69, .55); --mark-solid: #e6cd45; --mark-ink: #14231f;
+      --warn: #f0c867; --warn-bg: #3a2f10;
+      --bad: #ff9a90; --bad-bg: #3c1b18;
+      --good-bg: #123029;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 400 15px/1.5 var(--font); }
+  h1, h2, h3, p { margin: 0; }
+  [hidden], .hidden { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  :focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+
+  /* ---------- controls ---------- */
+  input, select, textarea {
+    width: 100%; font: inherit; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 9px 11px;
+  }
+  textarea { resize: vertical; line-height: 1.5; }
+  ::placeholder { color: var(--ink-2); opacity: .8; }
+  .btn {
+    font: inherit; font-weight: 700; cursor: pointer; padding: 9px 14px; border-radius: var(--r-sm);
+    border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+    text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.2;
+  }
+  .btn:hover { border-color: var(--brand); }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.quiet { background: transparent; border-color: transparent; color: var(--brand); }
+  .btn.quiet:hover { background: var(--sunken); }
+  .btn.danger { color: var(--bad); }
+  .btn.small { padding: 6px 10px; font-size: 13px; }
+  .btn.big { width: 100%; padding: 13px 16px; font-size: 16px; }
+  .link { font: inherit; background: none; border: 0; padding: 0; color: var(--brand); text-decoration: underline; cursor: pointer; }
+  .hint { color: var(--ink-2); font-size: 13px; margin-top: 6px; }
+
+  /* ---------- top bar ---------- */
+  .topbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 10px 24px;
+            background: var(--surface); border-bottom: 1px solid var(--line); }
+  .brand { font-weight: 700; font-size: 17px; letter-spacing: -.01em; margin-right: 4px; }
+  .clientbar { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 260px; }
+  .clientbar select { width: auto; min-width: 200px; max-width: 320px; font-weight: 700; }
+  .status { font-size: 13px; color: var(--ink-2); margin-left: auto; }
+  .status.bad { color: var(--bad); font-weight: 700; }
+
+  /* ---------- workspace ---------- */
+  .workspace { display: grid; grid-template-columns: minmax(340px, 430px) minmax(0, 1fr); max-width: 1280px; margin: 0 auto; }
+  .compose { padding: 28px 28px 48px 24px; border-right: 1px solid var(--line); }
+  .output { padding: 20px 24px 56px; min-width: 0; }
+  @media (max-width: 900px) {
+    .workspace { grid-template-columns: 1fr; }
+    .compose { border-right: 0; border-bottom: 1px solid var(--line); padding: 20px 16px 28px; }
+    .output { padding: 16px 16px 48px; }
+    .topbar { padding: 10px 16px; }
+    .status { margin-left: 0; }
+  }
+  .compose h1 { font-size: 22px; line-height: 1.2; margin-bottom: 18px; letter-spacing: -.01em; }
+  .field { margin-bottom: 20px; }
+  .field > label, .field > .label { display: block; font-weight: 700; margin-bottom: 6px; }
+  #pageContent { margin-top: 8px; }
+
+  /* photo */
+  .drop { border: 2px dashed var(--line-strong); border-radius: var(--r-lg); padding: 18px; text-align: center;
+          color: var(--ink-2); background: var(--surface); cursor: pointer; min-height: 150px;
+          display: grid; place-items: center; transition: border-color .15s, background .15s; }
+  .drop:hover, .drop.over { border-color: var(--brand); background: var(--good-bg); }
+  .drop strong { color: var(--ink); display: block; font-size: 16px; margin-bottom: 2px; }
+  .drop.filled { cursor: default; padding: 12px; }
+  .drop.filled:hover { background: var(--surface); border-color: var(--line-strong); }
+  .drop img { display: block; max-width: 100%; max-height: 220px; border-radius: 8px; margin: 0 auto 10px; }
+  .drop .file-row { display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; font-size: 13px; }
+
+  /* ---------- style bar (under the top bar) ---------- */
+  .stylebar { background: var(--sunken); border-bottom: 1px solid var(--line); }
+  .stylebar-in { max-width: 1280px; margin: 0 auto; padding: 12px 24px 14px; display: flex; align-items: flex-end; gap: 10px; }
+  .stylebar-title { flex: none; align-self: center; padding-right: 6px; margin-right: 2px; border-right: 1px solid var(--line-strong); }
+  .stylebar-title b { display: block; font-size: 15px; line-height: 1.2; }
+  .stylebar-title span { display: block; font-size: 12px; color: var(--ink-2); padding-right: 8px; }
+  .opts { display: grid; grid-template-columns: minmax(118px, 1.25fr) minmax(170px, 2fr) repeat(5, minmax(92px, 1fr)); gap: 8px; flex: 1; min-width: 0; }
+  .opt { position: relative; min-width: 0; }
+  .opt label { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); margin: 0 0 3px 2px; }
+  .opt select { padding: 7px 26px 7px 9px; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+  .opt.set select { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); background-color: var(--surface); }
+  .opt.set label { color: var(--brand); }
+  .opt.set label::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--brand); margin-left: 6px; vertical-align: 2px; }
+  .style-actions { display: flex; gap: 4px; flex: none; }
+  .style-toggle { display: none !important; align-self: center; }
+  @media (max-width: 1180px) {
+    .stylebar-in { flex-wrap: wrap; }
+    .stylebar-title { border-right: 0; flex: 1 1 auto; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .stylebar-title span { padding: 0; }
+    .style-actions { align-self: center; }
+    .opts { grid-template-columns: repeat(4, minmax(0, 1fr)); flex-basis: 100%; order: 2; }
+    .opts .opt-layout { grid-column: span 2; }
+  }
+  @media (max-width: 600px) {
+    .stylebar-in { padding: 10px 16px 12px; }
+    .opts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .opts .opt:first-child { grid-column: 1 / -1; }
+    .stylebar-title { display: flex; flex-direction: column; gap: 0; }
+    .style-toggle { display: inline-flex !important; }
+    .stylebar:not(.open) .opts, .stylebar:not(.open) .style-actions { display: none; }
+    .stylebar.open .style-actions { order: 3; width: 100%; }
+    .opts .opt-layout { grid-column: 1 / -1; order: -1; }
+  }
+
+  /* offer / event details in the form */
+  .type-box { margin: -4px 0 20px; padding: 12px 14px 14px; border-left: 4px solid var(--brand); background: var(--surface);
+              border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+  .type-box h2 { font-size: 15px; margin-bottom: 2px; }
+  .type-box .hint { margin: 0 0 10px; }
+  .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .type-grid .wide { grid-column: 1 / -1; }
+  .type-grid label { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); margin: 0 0 3px 2px; }
+  .type-grid input { padding: 7px 9px; font-size: 14px; }
+
+  /* ---------- result area ---------- */
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+  .tab { font: inherit; font-weight: 700; color: var(--ink-2); background: none; border: 0; border-bottom: 3px solid transparent;
+         padding: 10px 14px; cursor: pointer; margin-bottom: -1px; }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--brand); }
+  .tab .count { font-weight: 400; color: var(--ink-2); margin-left: 4px; }
+
+  .empty { max-width: 460px; padding: 36px 4px; }
+  .empty h2 { font-size: 24px; line-height: 1.2; margin-bottom: 8px; letter-spacing: -.01em; }
+  .empty p { color: var(--ink-2); margin-bottom: 16px; }
+  .working { display: flex; align-items: center; gap: 12px; padding: 40px 4px; color: var(--ink-2); font-size: 16px; }
+  .spinner { width: 18px; height: 18px; border: 3px solid var(--line-strong); border-top-color: var(--brand); border-radius: 50%;
+             animation: spin .8s linear infinite; flex: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .sheet { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px 24px 22px;
+           box-shadow: 0 18px 32px -24px rgba(20, 35, 31, .45); max-width: 760px; }
+  .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .sheet-head h2 { font-size: 22px; line-height: 1.2; letter-spacing: -.01em; }
+  .match { font-size: 14px; margin-top: 4px; }
+  .match.ok { color: var(--brand); } .match.partial { color: var(--warn); } .match.bad { color: var(--bad); }
+  .facts { display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr) minmax(0, 1fr); gap: 2px 22px;
+           margin-top: 16px; padding: 12px 0 0; border-top: 1px solid var(--line); }
+  .fact dt { font-size: 12px; font-weight: 700; color: var(--ink-2); }
+  .fact dd { margin: 1px 0 0; font-weight: 700; font-size: 15px; line-height: 1.35; }
+  .fact dd small { display: block; font-weight: 400; font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .type-pill { display: inline-block; padding: 1px 10px; border-radius: 999px; background: var(--good-bg); color: var(--brand); }
+  .type-pill.offer, .type-pill.event { background: var(--mark-solid); color: var(--mark-ink); }
+  .chosen { margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+  @media (max-width: 600px) { .facts { grid-template-columns: 1fr 1fr; gap: 10px 16px; } .facts .fact-wide { grid-column: 1 / -1; } }
+  .detail-list { display: grid; gap: 8px; }
+  .detail-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .detail-row .lbl { width: 92px; flex: none; font-size: 13px; color: var(--ink-2); }
+  .detail-row .val { flex: 1; min-width: 140px; font-weight: 700; }
+  .why { margin-top: 8px; padding: 10px 12px; background: var(--sunken); border-radius: var(--r-sm); font-size: 14px; color: var(--ink-2); }
+
+  .banner { border-radius: var(--r-sm); padding: 10px 14px; margin-top: 14px; font-size: 14px; }
+  .banner.warn { background: var(--warn-bg); color: var(--warn); }
+  .banner.bad { background: var(--bad-bg); color: var(--bad); }
+  .banner p { font-weight: 700; margin-bottom: 4px; }
+  .banner ul { margin: 0; padding-left: 18px; }
+  .banner .row { display: flex; gap: 8px; margin-top: 10px; }
+
+  .steps { list-style: none; margin: 16px 0 0; padding: 0; }
+  .step { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 14px; padding: 18px 0; border-top: 1px solid var(--line); }
+  .num { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--ink); display: grid; place-items: center;
+         font-weight: 700; font-size: 14px; transition: background .2s, border-color .2s; }
+  .num::before { content: attr(data-n); }
+  .step[data-done="true"] .num { background: var(--mark-solid); border-color: var(--mark-solid); color: var(--mark-ink); }
+  .step[data-done="true"] .num::before { content: "\2713"; }
+  .step-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .step-head h3 { font-size: 16px; }
+  .step-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mark { background-image: linear-gradient(var(--mark), var(--mark)); background-repeat: no-repeat; background-position: 0 90%;
+          background-size: 0 48%; transition: background-size .4s ease; padding: 0 2px; margin: 0 -2px;
+          -webkit-box-decoration-break: clone; box-decoration-break: clone; word-break: break-word; }
+  .step[data-done="true"] .mark { background-size: 100% 48%; }
+  .photo-row { display: flex; align-items: center; gap: 14px; }
+  .photo-row img { width: 84px; height: 84px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; background: var(--sunken); }
+  .photo-name { font-size: 17px; font-weight: 700; }
+  .photo-sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .post-text { min-height: 150px; overflow: hidden; resize: none; font-size: 15.5px; line-height: 1.6; padding: 12px 14px; }
+  .step[data-done="true"] .post-text { box-shadow: inset 4px 0 0 var(--mark-solid); }
+  .counter { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+  .meter { flex: 1; min-width: 120px; max-width: 220px; height: 6px; border-radius: 3px; background: var(--sunken); overflow: hidden; }
+  .meter span { display: block; height: 100%; background: var(--brand); transition: width .2s; }
+  .meter.long span { background: #c98a00; } .meter.over span { background: var(--bad); }
+  .saved { margin-left: auto; }
+  .link-value { font-size: 15px; word-break: break-all; }
+
+  /* emoji editor */
+  .emo { margin-top: 12px; padding: 10px 12px 12px; background: var(--sunken); border-radius: var(--r-sm); }
+  .emo-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .emo-head b { font-size: 13px; margin-right: 2px; }
+  .emo-chip { font: inherit; font-size: 20px; line-height: 1; min-width: 40px; height: 40px; padding: 0 6px; border-radius: var(--r-sm);
+              border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; }
+  .emo-chip:hover { border-color: var(--brand); }
+  .emo-chip[aria-pressed="true"] { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); }
+  .emo-none { font-size: 13px; color: var(--ink-2); }
+  .emo-panel { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-strong); }
+  .emo-panel .emo-title { font-size: 13px; margin-bottom: 8px; }
+  .emo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; }
+  .emo-grid .emo-chip { width: 100%; }
+  .emo-sub { font-size: 12px; font-weight: 700; color: var(--ink-2); margin: 12px 0 6px; }
+  .emo-grid.ai { margin-top: 8px; padding: 8px; background: var(--surface); border-radius: var(--r-sm); border: 1px dashed var(--brand); }
+  .emo-row.first { margin-top: 0; }
+  .emo-row.first input { flex: 1 1 200px; width: auto; font-size: 15px; }
+  .cursor-ctx { padding: 1px 6px; background: var(--surface); border-radius: 4px; font-style: italic; }
+  .cursor-mark { display: inline-block; width: 2px; height: 1.05em; background: var(--brand); margin: 0 1px; vertical-align: -2px; }
+  .file-line { font-size: 13px; color: var(--ink-2); margin-top: 3px; word-break: break-all; }
+  .file-line code { font: inherit; font-weight: 700; color: var(--ink); background: var(--sunken); padding: 1px 6px; border-radius: 4px; }
+  .emo-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .emo-row input { width: 170px; flex: 0 1 auto; max-width: 100%; font-size: 18px; padding: 6px 10px; }
+  .emo-row .grow { flex: 1; }
+  .paras { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 16px; }
+  .paras h3 { font-size: 16px; }
+  .paras .hint { margin: 2px 0 8px; }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg .btn { min-width: 48px; }
+  .seg .btn[aria-current="true"] { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); color: var(--brand); }
+  .cta-row { display: flex; gap: 6px; }
+  .cta-row input { flex: 1; min-width: 0; }
+  .compose-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 18px; }
+  .compose-head h1 { margin: 0; }
+  .relayout { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 16px; }
+  .relayout h3 { font-size: 16px; }
+  .relayout .hint { margin: 2px 0 8px; }
+  .relayout-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .relayout-row select { flex: 1 1 220px; min-width: 0; }
+  .relayout-row .btn { flex: none; }
+  @media (max-width: 600px) { .relayout-row .btn { flex: 1 1 100%; } }
+  .tweak { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 16px; }
+  .tweak h3 { font-size: 16px; margin-bottom: 8px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { font: inherit; font-size: 13px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line-strong);
+          background: var(--surface); color: var(--ink); cursor: pointer; }
+  .chip:hover { border-color: var(--brand); background: var(--good-bg); }
+  .chip:disabled { opacity: .5; cursor: default; }
+  .tweak-row { display: flex; gap: 8px; margin-top: 10px; }
+
+  /* ---------- history ---------- */
+  .hist-tools { max-width: 760px; margin-bottom: 12px; }
+  .hist-list { list-style: none; margin: 0; padding: 0; max-width: 760px; }
+  .hist-item { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .hist-item:first-child { border-top: 0; }
+  .hist-item img, .hist-item .noimg { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; background: var(--sunken); border: 1px solid var(--line); }
+  .hist-title { font-weight: 700; }
+  .hist-snippet { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hist-meta { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .hist-actions { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+  .tag { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--warn-bg); color: var(--warn); margin-left: 6px; }
+
+  /* ---------- dialog + toast ---------- */
+  dialog { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 0; width: min(520px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); }
+  dialog::backdrop { background: rgba(10, 20, 17, .55); }
+  dialog form { padding: 22px 24px 20px; }
+  dialog h2 { font-size: 20px; margin-bottom: 14px; }
+  dialog .field { margin-bottom: 14px; }
+  dialog .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  dialog .foot { display: flex; gap: 8px; margin-top: 18px; align-items: center; }
+  dialog .foot .spacer { flex: 1; }
+  #toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+           background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 999px; font-weight: 700; font-size: 14px;
+           transition: opacity .2s, transform .2s; z-index: 50; max-width: calc(100vw - 32px); }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">GBP Post Writer</div>
+  <div class="clientbar">
+    <label class="sr-only" for="clientSelect">Client</label>
+    <select id="clientSelect"></select>
+    <button class="btn quiet small" id="editClientBtn" type="button">Edit client</button>
+    <button class="btn small" id="newClientBtn" type="button">Add client</button>
+  </div>
+  <span id="status" class="status"></span>
+</header>
+
+<section class="stylebar" aria-labelledby="styleTitle">
+  <div class="stylebar-in">
+    <div class="stylebar-title"><b id="styleTitle">Style</b><span id="styleSummary">All on Auto</span></div>
+    <div class="opts" id="styleOpts">
+      <div class="opt"><label for="optType">Post type</label><select id="optType"></select></div>
+      <div class="opt opt-layout"><label for="optLayout">Layout</label><select id="optLayout"></select></div>
+      <div class="opt"><label for="optLength">Length</label><select id="optLength"></select></div>
+      <div class="opt"><label for="optOpener">Opener</label><select id="optOpener"></select></div>
+      <div class="opt"><label for="optCloser">Closer</label><select id="optCloser"></select></div>
+      <div class="opt"><label for="optTone">Tone</label><select id="optTone"></select></div>
+      <div class="opt"><label for="optEmojis">Emojis</label><select id="optEmojis"></select></div>
+    </div>
+    <button type="button" class="btn small style-toggle" id="styleToggle" aria-expanded="false" aria-controls="styleOpts">Change</button>
+    <div class="style-actions">
+      <button type="button" class="btn small" id="randAllBtn">Randomize all</button>
+      <button type="button" class="btn small quiet" id="resetOptsBtn">Reset</button>
+    </div>
+  </div>
+</section>
+
+<main class="workspace">
+  <section class="compose" aria-labelledby="composeTitle">
+    <div class="compose-head">
+      <h1 id="composeTitle">Post details</h1>
+      <button class="btn small" type="button" id="newPostBtn" title="Clear the form and the result to start a new post">Start new post</button>
+    </div>
+    <form id="genForm" novalidate>
+      <div class="field">
+        <label for="cta">Page the button links to</label>
+        <div class="cta-row">
+          <input id="cta" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://client-site.com/service-page or a sitemap link">
+          <button class="btn" type="button" id="copyCtaBtn" disabled aria-label="Copy the page link">Copy</button>
+        </div>
+        <p class="hint" id="ctaHint">We read the page for you. <button class="link" type="button" id="pasteToggle">Paste the text instead</button></p>
+        <textarea id="pageContent" class="hidden" rows="6" aria-label="Page text" placeholder="Paste the text of the page here."></textarea>
+      </div>
+
+      <div class="field">
+        <span class="label" id="photoLabel">Photo</span>
+        <div id="drop" class="drop" role="button" tabindex="0" aria-labelledby="photoLabel"></div>
+        <input id="file" type="file" accept="image/*" class="hidden">
+      </div>
+
+      <section class="type-box" id="typeBox" hidden aria-labelledby="typeBoxTitle">
+        <h2 id="typeBoxTitle">Offer details</h2>
+        <p class="hint" id="typeBoxHint"></p>
+        <div class="type-grid" id="typeGrid"></div>
+      </section>
+
+      <div class="field">
+        <label for="special">Notes for Gemini</label>
+        <textarea id="special" rows="2" placeholder="Optional. For example: add the $65 price, the client confirmed it."></textarea>
+      </div>
+
+      <button class="btn primary big" id="genBtn" type="submit">Generate post</button>
+      <p class="hint" style="text-align:center">Ctrl+Enter works too.</p>
+    </form>
+  </section>
+
+  <section class="output" aria-label="Results">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabResult" aria-selected="true" aria-controls="resultPanel" type="button">Result</button>
+      <button class="tab" role="tab" id="tabHistory" aria-selected="false" aria-controls="historyPanel" type="button">History<span class="count" id="histCount"></span></button>
+    </div>
+    <div id="resultPanel" role="tabpanel" aria-labelledby="tabResult"></div>
+    <div id="historyPanel" role="tabpanel" aria-labelledby="tabHistory" hidden>
+      <div class="hist-tools"><label class="sr-only" for="histSearch">Search history</label>
+        <input id="histSearch" type="search" placeholder="Search this client's posts"></div>
+      <ul class="hist-list" id="histList"></ul>
+    </div>
+  </section>
+</main>
+
+<dialog id="clientDialog" aria-labelledby="clientDialogTitle">
+  <form id="clientForm" autocomplete="off">
+    <h2 id="clientDialogTitle">Add client</h2>
+    <div class="field"><label for="cName">Business name</label><input id="cName" name="name" required></div>
+    <div class="field"><label for="cAddress">Address</label><input id="cAddress" name="address"></div>
+    <div class="two">
+      <div class="field"><label for="cPhone">Phone</label><input id="cPhone" name="phone"></div>
+      <div class="field"><label for="cWebsite">Website</label><input id="cWebsite" name="website"></div>
+    </div>
+    <div class="field"><label for="cGbp">Google Business Profile link</label><input id="cGbp" name="gbp_link"></div>
+    <div class="field"><label for="cNotes">Rules for this business</label>
+      <textarea id="cNotes" name="notes" rows="3" placeholder='For example: "Cash home buyer" or "Chiropractor, never promise results".'></textarea></div>
+    <div class="foot">
+      <button class="btn primary" type="submit">Save client</button>
+      <button class="btn" type="button" id="cancelClientBtn">Cancel</button>
+      <span class="spacer"></span>
+      <button class="btn quiet danger small" type="button" id="deleteClientBtn">Delete client</button>
+    </div>
+  </form>
+</dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const state = { layouts: [], clients: [], clientId: null, file: null, fileUrl: null, busy: false, current: null, posts: [], editingId: null };
+const CLIENT_FIELDS = ['name', 'address', 'phone', 'website', 'gbp_link', 'notes'];
+const OPT_FIELDS = [['post_type', '#optType', 'Post type'], ['layout', '#optLayout', 'Layout'], ['length', '#optLength', 'Length'], ['opener', '#optOpener', 'Opener'],
+                    ['closer', '#optCloser', 'Closer'], ['tone', '#optTone', 'Tone'], ['emojis', '#optEmojis', 'Emojis']];
+const TYPE_DETAILS = {
+  offer: { title: 'Offer details', hint: 'Fill these in if the client gave you the offer. Leave them empty and Gemini only writes an Offer when the page has a real one with dates, otherwise it writes an Update.',
+    fields: [['offer_title', 'Offer title', 'wide', 'e.g. $40 off drain cleaning'], ['offer_start', 'Starts', '', 'e.g. May 1'], ['offer_end', 'Ends', '', 'e.g. May 31'],
+             ['offer_code', 'Coupon code', '', 'Optional'], ['offer_terms', 'Terms', '', 'Optional']] },
+  event: { title: 'Event details', hint: 'Fill these in for a real event. Leave them empty and Gemini only writes an Event when the page has a real dated one, otherwise it writes an Update.',
+    fields: [['event_title', 'Event title', 'wide', 'e.g. Free water heater check day'], ['event_start', 'Starts', '', 'e.g. June 7, 9 AM'], ['event_end', 'Ends', '', 'e.g. June 7, 3 PM']] },
+};
+const TWEAKS = [
+  ['Shorter', 'Make it shorter, around 300 characters.'],
+  ['Longer', 'Make it longer, around 900 characters, with more useful detail from the page.'],
+  ['New opening line', 'Rewrite only the opening line in a different style.'],
+  ['New closing line', 'Rewrite only the closing line in a different style.'],
+  ['Fewer emojis', 'Use fewer emojis, but keep at least one.'],
+  ['More local', 'Add more local relevance (city, county, or neighborhood) from the business address or the page.'],
+  ['Friendlier', 'Make the tone warmer and more conversational.'],
+  ['More formal', 'Make the tone more professional and formal.'],
+];
+
+/* ---------- emoji helpers ---------- */
+const EMOJI_RE = /(?:\p{Extended_Pictographic}|\u2714\uFE0F)[\uFE0F\u{1F3FB}-\u{1F3FF}]?(?:\u200D\p{Extended_Pictographic}\uFE0F?)*/gu;
+const emojiMatches = (text) => [...text.matchAll(EMOJI_RE)];
+const EMOJI_BANKS = [
+  ["plumb|drain|pipe|leak|water|heater|sewer|faucet|toilet|clog|septic", ["\ud83e\udea0", "\ud83e\udee7", "\ud83e\udea3", "\ud83e\uddd1\u200d\ud83d\udd27", "\ud83d\udebf", "\ud83e\uddf0", "\ud83e\ude9b", "\ud83e\uded7", "\ud83d\udec1", "\ud83d\udca7", "\ud83d\udd27", "\ud83d\udee0\ufe0f", "\ud83d\udd0d"]],
+  ["auto|car|glass|windshield|vehicle|truck|tire|junk|tow|ppf|detail|paint", ["\ud83d\udede", "\ud83e\ude9f", "\ud83d\udefb", "\ud83e\uddd1\u200d\ud83d\udd27", "\ud83e\ude9b", "\ud83e\udee7", "\ud83e\ude9e", "\ud83d\udee1\ufe0f", "\ud83d\ude97", "\ud83d\udd29", "\u2728", "\ud83e\uddfd", "\ud83d\udcb5", "\ud83d\udd0d"]],
+  ["home|house|real estate|property|buyer|rent|apartment|townhome|roof|floor|cash", ["\ud83e\udeb4", "\ud83e\ude9c", "\ud83e\udea7", "\ud83d\uded6", "\ud83c\udfe1", "\ud83d\udd11", "\ud83e\udd1d", "\ud83e\udef6", "\ud83d\udeaa", "\ud83d\udccd", "\ud83d\udcb5", "\ud83d\udecb\ufe0f", "\ud83c\udfd8\ufe0f", "\ud83d\udcc5"]],
+  ["chiro|spine|back|pain|health|wellness|therapy|dental|clinic|care|massage|body", ["\ud83e\udef6", "\ud83e\ude7b", "\ud83e\udec1", "\ud83e\udec0", "\ud83e\udeb7", "\ud83e\uddb4", "\ud83e\ude79", "\ud83e\uddd8", "\ud83d\udcaa", "\ud83e\ude7a", "\ud83c\udf3f", "\ud83e\uddbe", "\ud83d\udeb6", "\ud83d\udcc5", "\ud83e\udd1d"]],
+  ["electric|wiring|panel|outlet|light|lighting|power|generator|solar|christmas|holiday", ["\ud83d\udedc", "\ud83e\udeab", "\u26a1", "\ud83d\udca1", "\ud83e\ude9b", "\ud83e\uddd1\u200d\ud83d\udd27", "\ud83d\udd0b", "\ud83d\udd0c", "\ud83e\ude84", "\ud83c\udf84", "\ud83e\udea9", "\u2728", "\ud83e\uddef", "\ud83d\udd0d"]],
+  ["hvac|air|heating|cooling|furnace|duct|thermostat|\\bac\\b", ["\ud83e\uddca", "\u2744\ufe0f", "\ud83c\udf21\ufe0f", "\ud83d\udca8", "\ud83e\udee7", "\ud83e\ude9f", "\ud83d\udd25", "\ud83d\udee0\ufe0f", "\ud83c\udfe0", "\ud83d\udcc5", "\ud83d\udd0d", "\u2699\ufe0f"]],
+  ["clean|wash|pest|lawn|landscap|garden|tree|yard|pressure|window", ["\ud83e\udea3", "\ud83e\udee7", "\ud83e\udeb4", "\ud83e\udeb7", "\ud83e\ude9f", "\ud83e\uddfd", "\ud83e\uddfc", "\ud83e\uddf9", "\ud83c\udf33", "\ud83c\udf31", "\u2728", "\ud83d\udc4d"]],
+];
+const EMOJI_GENERAL = ["\ud83e\udef6", "\u2705", "\ud83e\udee1", "\ud83e\ude84", "\ud83d\ude4c", "\ud83e\udef0", "\ud83d\udccd", "\ud83e\ude77", "\u2b50", "\ud83d\ude80", "\ud83d\udcac", "\ud83d\udc4b", "\ud83d\udd0d", "\ud83d\udcc5", "\ud83e\udd1d", "\ud83d\udee1\ufe0f", "\ud83d\udcaf", "\ud83c\udf89", "\ud83e\udef5", "\ud83e\udde0", "\ud83d\udca1", "\ud83d\udd50", "\ud83c\udfc6", "\ud83d\udcdd", "\ud83c\udf1f", "\ud83d\udcc8", "\u26a0\ufe0f", "\ud83e\udea9", "\ud83e\udee7", "\ud83d\udca7", "\ud83d\udd25", "\ud83d\udee0\ufe0f"];
+function emojiSuggestions(context) {
+  const text = context.toLowerCase();
+  const out = [];
+  for (const [pattern, list] of EMOJI_BANKS) if (new RegExp('\\b(?:' + pattern + ')').test(text)) out.push(...list);
+  out.push(...EMOJI_GENERAL);
+  return [...new Set(out)];
+}
+
+/* ---------- helpers ---------- */
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === 'class') el.className = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else if (v === true) el.setAttribute(k, '');
+    else if (v !== undefined && v !== null && v !== false) el.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false)
+    el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  return el;
+}
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  let data = {};
+  try { data = await res.json(); } catch (e) { /* not JSON */ }
+  if (!res.ok) throw new Error(data.error || ('Something went wrong (' + res.status + ').'));
+  return data;
+}
+const jsonOpts = (method, body) => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+function store(key, value) {
+  try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); } catch (e) { /* storage blocked */ }
+  return null;
+}
+let toastTimer;
+function toast(message) {
+  const t = $('#toast');
+  t.textContent = message; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) { const t = h('textarea', { 'aria-hidden': 'true' }); t.value = text; document.body.append(t); t.select(); document.execCommand('copy'); t.remove(); }
+}
+const lengthLabel = (n) => n <= 450 ? 'short' : n <= 800 ? 'standard' : 'long';
+const fmtDate = (iso) => new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+/* ---------- top bar: status and clients ---------- */
+async function loadStatus() {
+  const s = await api('/api/status');
+  const el = $('#status');
+  el.className = 'status' + (s.has_key ? '' : ' bad');
+  el.textContent = s.has_key ? 'Model: ' + s.model : 'No Gemini key found. Add it to the .env file and restart.';
+}
+async function loadClients(selectId) {
+  state.clients = await api('/api/clients');
+  const sel = $('#clientSelect');
+  if (!state.clients.length) sel.replaceChildren(h('option', { value: '' }, 'No clients yet'));
+  else sel.replaceChildren(...state.clients.map(c => h('option', { value: c.id }, c.name)));
+  const want = Number(selectId || state.clientId || store('gbp.client'));
+  const pick = state.clients.find(c => c.id === want) || state.clients[0];
+  state.clientId = pick ? pick.id : null;
+  if (pick) sel.value = pick.id;
+  sel.disabled = !pick; $('#editClientBtn').disabled = !pick;
+  if (pick) store('gbp.client', String(pick.id));
+  await loadHistory();
+  if (!state.current && !state.busy) renderEmpty();
+}
+const currentClient = () => state.clients.find(c => c.id === state.clientId);
+$('#clientSelect').onchange = async (e) => {
+  state.clientId = Number(e.target.value) || null; store('gbp.client', String(state.clientId || ''));
+  state.current = null; renderEmpty(); await loadHistory();
+};
+
+const dlg = $('#clientDialog');
+function openClientDialog(client) {
+  state.editingId = client ? client.id : null;
+  $('#clientDialogTitle').textContent = client ? 'Edit client' : 'Add client';
+  const f = $('#clientForm');
+  for (const k of CLIENT_FIELDS) f.elements[k].value = client ? client[k] : '';
+  $('#deleteClientBtn').hidden = !client;
+  dlg.showModal(); f.elements.name.focus();
+}
+$('#newClientBtn').onclick = () => openClientDialog(null);
+$('#editClientBtn').onclick = () => { const c = currentClient(); if (c) openClientDialog(c); };
+$('#cancelClientBtn').onclick = () => dlg.close();
+dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+$('#clientForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const body = Object.fromEntries(CLIENT_FIELDS.map(k => [k, e.target.elements[k].value]));
+  try {
+    const saved = await api(state.editingId ? '/api/clients/' + state.editingId : '/api/clients',
+      jsonOpts(state.editingId ? 'PUT' : 'POST', body));
+    dlg.close(); toast('Client saved'); await loadClients(saved.id);
+  } catch (err) { toast(err.message); }
+};
+$('#deleteClientBtn').onclick = async () => {
+  const c = currentClient();
+  if (!c || !confirm('Delete "' + c.name + '" and all of its posts? This cannot be undone.')) return;
+  await api('/api/clients/' + c.id, { method: 'DELETE' });
+  dlg.close(); state.clientId = null; state.current = null; toast('Client deleted'); await loadClients();
+};
+
+/* ---------- compose: page link, photo, style ---------- */
+function openPaste(open) {
+  $('#pageContent').classList.toggle('hidden', !open);
+  $('#pasteToggle').textContent = open ? 'Fetch the page for me instead' : 'Paste the text instead';
+  if (open) $('#pageContent').focus(); else $('#pageContent').value = '';
+}
+$('#pasteToggle').onclick = () => openPaste($('#pageContent').classList.contains('hidden'));
+
+function renderDrop() {
+  const drop = $('#drop');
+  if (state.fileUrl) { URL.revokeObjectURL(state.fileUrl); state.fileUrl = null; }
+  drop.classList.toggle('filled', !!state.file);
+  if (!state.file) {
+    drop.setAttribute('aria-label', 'Photo. Click to choose a file, or drop or paste one.');
+    drop.replaceChildren(h('div', {}, h('strong', {}, 'Drop a photo here'), 'Click to choose one, or paste it from your clipboard.'));
+    return;
+  }
+  state.fileUrl = URL.createObjectURL(state.file);
+  drop.setAttribute('aria-label', 'Photo selected: ' + (state.file.name || 'pasted image'));
+  drop.replaceChildren(
+    h('img', { src: state.fileUrl, alt: 'Selected photo' }),
+    h('div', { class: 'file-row' },
+      h('span', {}, (state.file.name || 'Pasted image') + ' (' + Math.max(1, Math.round(state.file.size / 1024)) + ' KB)'),
+      h('button', { class: 'btn quiet small', type: 'button', onclick: (e) => { e.stopPropagation(); $('#file').click(); } }, 'Replace'),
+      h('button', { class: 'btn quiet small danger', type: 'button', onclick: (e) => { e.stopPropagation(); setFile(null); } }, 'Remove')));
+}
+function setFile(file) {
+  if (file && !file.type.startsWith('image/')) { toast('That file is not an image.'); return; }
+  state.file = file; $('#file').value = ''; renderDrop();
+}
+$('#drop').onclick = () => { if (!state.file) $('#file').click(); };
+$('#drop').onkeydown = (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === $('#drop')) { e.preventDefault(); $('#file').click(); } };
+$('#file').onchange = (e) => { if (e.target.files[0]) setFile(e.target.files[0]); };
+['dragenter', 'dragover'].forEach(t => $('#drop').addEventListener(t, e => { e.preventDefault(); $('#drop').classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => $('#drop').addEventListener(t, e => { e.preventDefault(); $('#drop').classList.remove('over'); }));
+$('#drop').addEventListener('drop', e => setFile(e.dataTransfer.files[0]));
+document.addEventListener('paste', e => {
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  if (item) { setFile(item.getAsFile()); toast('Photo pasted'); }
+});
+
+async function loadOptions() {
+  const o = await api('/api/options');
+  const fill = (sel, items, random = true) => $(sel).replaceChildren(
+    h('option', { value: 'auto' }, 'Auto'), random ? h('option', { value: 'random' }, 'Random') : null,
+    ...items.map(i => h('option', { value: i.id }, i.name)));
+  state.layouts = o.layouts;
+  fill('#optType', o.post_types, false);
+  fill('#optLayout', o.layouts.map(l => ({ id: l.id, name: l.id + '. ' + l.name })));
+  fill('#optLength', o.lengths); fill('#optOpener', o.openers); fill('#optCloser', o.closers);
+  fill('#optTone', o.tones); fill('#optEmojis', o.emojis.map(e => ({ id: e.id, name: e.id })));
+  try {
+    const saved = JSON.parse(store('gbp.options') || '{}');
+    for (const [k, sel] of OPT_FIELDS.map(f => [f[0], f[1]])) if (saved[k] && $(sel).querySelector(`option[value="${saved[k]}"]`)) $(sel).value = saved[k];
+  } catch (e) { /* ignore bad saved value */ }
+  updateStyleSummary(); renderTypeBox();
+}
+function updateStyleSummary() {
+  let set = 0, random = 0;
+  for (const [, sel] of OPT_FIELDS) {
+    const s = $(sel), on = !!s.value && s.value !== 'auto';
+    s.closest('.opt').classList.toggle('set', on);
+    s.title = s.selectedOptions[0] ? s.selectedOptions[0].textContent : '';
+    if (s.value === 'random') random += 1; else if (on) set += 1;
+  }
+  const parts = [];
+  if (set) parts.push(set + ' chosen');
+  if (random) parts.push(random + ' random');
+  $('#styleSummary').textContent = parts.length ? parts.join(', ') + ', rest Auto' : 'All on Auto';
+  store('gbp.options', JSON.stringify(Object.fromEntries(OPT_FIELDS.map(([k, sel]) => [k, $(sel).value]))));
+}
+OPT_FIELDS.forEach(([, sel]) => $(sel).addEventListener('change', updateStyleSummary));
+// Post type has no Random: Offer and Event need a real offer or event, so "Randomize all" leaves it alone.
+const setAllOptions = (v) => { OPT_FIELDS.forEach(([k, sel]) => { if (v !== 'random' || k !== 'post_type') $(sel).value = v; }); updateStyleSummary(); renderTypeBox(); };
+const typeValues = {};
+function renderTypeBox() {
+  const t = $('#optType').value, cfg = TYPE_DETAILS[t];
+  $('#typeBox').hidden = !cfg;
+  if (!cfg) return;
+  $('#typeBoxTitle').textContent = cfg.title; $('#typeBoxHint').textContent = cfg.hint;
+  $('#typeGrid').replaceChildren(...cfg.fields.map(([key, label, cls, ph]) => {
+    const input = h('input', { id: 'td_' + key, name: key, placeholder: ph, autocomplete: 'off' });
+    input.value = typeValues[key] || '';
+    input.addEventListener('input', () => { typeValues[key] = input.value; });
+    return h('div', { class: cls }, h('label', { for: 'td_' + key }, label), input);
+  }));
+}
+$('#optType').addEventListener('change', renderTypeBox);
+$('#styleToggle').onclick = () => {
+  const open = $('.stylebar').classList.toggle('open');
+  $('#styleToggle').setAttribute('aria-expanded', String(open));
+  $('#styleToggle').textContent = open ? 'Done' : 'Change';
+};
+$('#randAllBtn').onclick = () => setAllOptions('random');
+$('#resetOptsBtn').onclick = () => setAllOptions('auto');
+
+/* ---------- page link copy, start new post ---------- */
+const syncCopyCta = () => { $('#copyCtaBtn').disabled = !$('#cta').value.trim(); };
+$('#cta').addEventListener('input', syncCopyCta);
+$('#copyCtaBtn').onclick = async () => {
+  const v = $('#cta').value.trim(); if (!v) return;
+  await copyText(v); toast('Page link copied');
+};
+function resetForm() {
+  if (state.busy) return;
+  $('#cta').value = ''; $('#special').value = ''; $('#pageContent').value = ''; openPaste(false);
+  Object.keys(typeValues).forEach(k => delete typeValues[k]); renderTypeBox();
+  setFile(null); syncCopyCta();
+  state.current = null; renderEmpty(); showTab('result');
+  $('#cta').focus(); toast('Ready for a new post');
+}
+$('#newPostBtn').onclick = resetForm;
+
+/* ---------- tabs ---------- */
+function showTab(name) {
+  const result = name === 'result';
+  $('#tabResult').setAttribute('aria-selected', String(result)); $('#tabHistory').setAttribute('aria-selected', String(!result));
+  $('#resultPanel').hidden = !result; $('#historyPanel').hidden = result;
+}
+$('#tabResult').onclick = () => showTab('result');
+$('#tabHistory').onclick = () => showTab('history');
+document.querySelector('.tabs').addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const next = e.target.id === 'tabResult' ? 'history' : 'result'; showTab(next); $(next === 'result' ? '#tabResult' : '#tabHistory').focus(); }
+});
+
+/* ---------- generate ---------- */
+let workTimer;
+function startWorking() {
+  state.busy = true; $('#genBtn').disabled = true; $('#genBtn').textContent = 'Writing your post...';
+  let seconds = 0;
+  const label = h('span', {}, 'Reading the page and writing the post. 0s');
+  $('#resultPanel').replaceChildren(h('div', { class: 'working', role: 'status' }, h('span', { class: 'spinner' }), label));
+  clearInterval(workTimer);
+  workTimer = setInterval(() => { seconds += 1; label.textContent = 'Reading the page and writing the post. ' + seconds + 's' + (seconds > 25 ? ' (the free tier can be slow)' : ''); }, 1000);
+}
+function stopWorking() {
+  clearInterval(workTimer); state.busy = false; $('#genBtn').disabled = false; $('#genBtn').textContent = 'Generate post';
+}
+async function generate({ force = false, another = false } = {}) {
+  if (state.busy) return;
+  if (!state.clientId) { toast('Add a client first.'); openClientDialog(null); return; }
+  const cta = $('#cta').value.trim();
+  if (!cta) { toast('Enter the page link first.'); $('#cta').focus(); return; }
+  if (!state.file) { toast('Add a photo first.'); $('#drop').focus(); return; }
+  const fd = new FormData();
+  fd.append('client_id', state.clientId); fd.append('cta_url', cta); fd.append('image', state.file);
+  fd.append('page_content', $('#pageContent').value); fd.append('special', $('#special').value);
+  for (const [name, sel] of OPT_FIELDS) fd.append(name, $(sel).value || 'auto');
+  const cfg = TYPE_DETAILS[$('#optType').value];
+  if (cfg) for (const [key] of cfg.fields) fd.append(key, (typeValues[key] || '').trim());
+  if (force) fd.append('force', '1');
+  if (another) fd.append('another', '1');
+  showTab('result'); startWorking();
+  if (window.innerWidth <= 900) $('.output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  try { renderResult(await api('/api/generate', { method: 'POST', body: fd })); }
+  catch (err) {
+    renderError(err.message);
+    if (/Paste the page text/.test(err.message)) openPaste(true);
+  } finally { stopWorking(); await loadHistory(); }
+}
+$('#genForm').onsubmit = (e) => { e.preventDefault(); generate(); };
+document.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); generate(); } });
+
+/* ---------- result rendering ---------- */
+function renderEmpty() {
+  const hasClients = state.clients.length > 0;
+  $('#resultPanel').replaceChildren(h('div', { class: 'empty' },
+    h('h2', {}, hasClients ? 'Your post will appear here' : 'Start by adding a client'),
+    h('p', {}, hasClients
+      ? 'Add the page link and a photo, then press Generate post. You get the photo name, the post text and the button link in the order Google asks for them.'
+      : 'Each client keeps its own history, so Gemini can avoid repeating layouts, openers and filenames.'),
+    hasClients ? null : h('button', { class: 'btn primary', type: 'button', onclick: () => openClientDialog(null) }, 'Add your first client')));
+}
+function renderError(message, retry) {
+  $('#resultPanel').replaceChildren(h('div', { class: 'sheet' },
+    h('div', { class: 'banner bad', role: 'alert' }, h('p', {}, 'That did not work'), message),
+    h('div', { class: 'tweak-row' }, h('button', { class: 'btn', type: 'button', onclick: () => generate() }, 'Try again'))));
+}
+function renderResult(r) {
+  state.current = null;
+  if (r.status === 'mismatch') return renderMismatch(r);
+  if (r.status === 'error') return renderError(r.error || 'Gemini did not return a post.');
+  renderSheet(r.post, { analysis: r.analysis, validation: r.validation, needsReview: r.status === 'needs_review', fresh: true, applied: r.applied_options });
+}
+function renderMismatch(r) {
+  const a = r.analysis || {};
+  $('#resultPanel').replaceChildren(h('div', { class: 'sheet' },
+    h('h2', {}, 'The photo does not fit that page'),
+    h('p', { class: 'match bad' }, 'Match: ' + (a.match_pct != null ? a.match_pct + '%' : 'low') + '. Nothing was written or saved.'),
+    a.reason ? h('p', { class: 'why' }, a.reason) : null,
+    h('div', { class: 'tweak-row', style: 'flex-wrap:wrap' },
+      h('button', { class: 'btn', type: 'button', onclick: () => $('#file').click() }, 'Choose another photo'),
+      h('button', { class: 'btn', type: 'button', onclick: () => { $('#cta').focus(); $('#cta').select(); } }, 'Use a different page'),
+      h('button', { class: 'btn quiet', type: 'button', onclick: () => generate({ force: true }) }, 'Write it anyway'))));
+}
+
+function renderSheet(post, ctx = {}) {
+  state.current = post;
+  const a = ctx.analysis || {};
+  const typeKey = post.post_type_key || '';
+  const matchClass = a.match_status === 'Partial Match' ? 'partial' : a.match_status === 'Mismatch' ? 'bad' : 'ok';
+  const matchText = a.match_status ? ('Photo and page: ' + a.match_status.toLowerCase() + (a.match_pct != null ? ' (' + a.match_pct + '%)' : '')) : '';
+  const whyBox = a.reason ? h('p', { class: 'why', hidden: a.match_status === 'Match' }, a.reason) : null;
+  const whyBtn = (a.reason && a.match_status === 'Match')
+    ? h('button', { class: 'link', type: 'button', onclick: () => { whyBox.hidden = !whyBox.hidden; } }, 'Why?') : null;
+
+  const steps = h('ol', { class: 'steps' });
+  const stepEl = (n, name) => h('li', { class: 'step', 'data-done': 'false', 'data-step': name },
+    h('span', { class: 'num', 'data-n': n, 'aria-hidden': 'true' }));
+  const done = (li, text) => { li.dataset.done = 'true'; toast(text); };
+
+  /* 1: photo */
+  const s1 = stepEl(1, 'photo'), s1Body = h('div', {});
+  const fileName = post.file_name || ((post.filename || 'gbp photo').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.jpg');
+  const copyName = h('button', { class: 'btn small', type: 'button', onclick: async () => { await copyText(fileName); done(s1, 'File name copied'); } }, 'Copy name');
+  const download = post.has_image ? h('a', { class: 'btn small', href: '/api/posts/' + post.id + '/image?download=1', download: '',
+    onclick: () => done(s1, 'Photo saved as ' + fileName) }, 'Download photo') : null;
+  s1Body.append(h('div', { class: 'step-head' }, h('h3', {}, 'Photo'), h('div', { class: 'step-actions' }, copyName, download)),
+    h('div', { class: 'photo-row' },
+      post.has_image ? h('img', { src: '/api/posts/' + post.id + '/image', alt: 'Photo for this post' }) : null,
+      h('div', {}, h('div', { class: 'photo-name' }, h('span', { class: 'mark' }, post.filename || '(no filename)')),
+        h('div', { class: 'file-line' }, 'File name: ', h('code', {}, fileName)),
+        h('div', { class: 'photo-sub' }, 'Lowercase with hyphens is the SEO standard. Download saves the photo under this name.'))));
+  s1.append(s1Body); steps.append(s1);
+
+  /* Offer or Event details the user typed: Google asks for these in their own fields */
+  let n = 2;
+  if (post.type_details && post.type_details.length) {
+    const sD = stepEl(n++, 'details');
+    const rows = post.type_details.map(d => h('div', { class: 'detail-row' },
+      h('span', { class: 'lbl' }, d.label), h('span', { class: 'val' }, h('span', { class: 'mark' }, d.value)),
+      h('button', { class: 'btn small quiet', type: 'button', onclick: async () => { await copyText(d.value); done(sD, d.label + ' copied'); } }, 'Copy')));
+    sD.append(h('div', {}, h('div', { class: 'step-head' }, h('h3', {}, (typeKey === 'event' ? 'Event' : 'Offer') + ' details')),
+      h('div', { class: 'detail-list' }, rows)));
+    steps.append(sD);
+  }
+
+  /* 2: post text (editable) */
+  const s2 = stepEl(n++, 'text'), s2Body = h('div', {});
+  const ta = h('textarea', { class: 'post-text', 'aria-label': 'Post text', spellcheck: 'true' }); ta.value = post.text;
+  const chars = h('span', {}), emojis = h('span', {}), saved = h('span', { class: 'saved' }, ''), meter = h('div', { class: 'meter', role: 'img' }, h('span', {}));
+  let lastSaved = post.text, emojiCount = post.emojis, timer, paraCount = 0, parasReady = false;
+  const refresh = () => {
+    ta.style.height = 'auto'; ta.style.height = Math.max(150, ta.scrollHeight + 2) + 'px';
+    const n = ta.value.length;
+    chars.textContent = n + ' characters, ' + lengthLabel(n);
+    emojiCount = emojiMatches(ta.value).length;
+    emojis.textContent = emojiCount + (emojiCount === 1 ? ' emoji' : ' emojis');
+    paraCount = ta.value.trim() ? ta.value.trim().split(/\n\s*\n/).filter(b => b.trim()).length : 0;
+    if (parasReady) updateParas();
+    meter.firstChild.style.width = Math.min(100, n / 15) + '%';
+    meter.className = 'meter' + (n > 1500 ? ' over' : n > 1200 ? ' long' : '');
+    meter.setAttribute('aria-label', n + ' of 1,500 characters');
+  };
+  const reviewBox = h('div', {});
+  const saveText = async () => {
+    if (ta.value.trim() === lastSaved.trim() || !ta.value.trim()) return;
+    saved.textContent = 'Saving...';
+    try {
+      const r = await api('/api/posts/' + post.id + '/text', jsonOpts('PATCH', { text: ta.value }));
+      lastSaved = r.post.text; emojiCount = r.post.emojis; state.current = r.post; post.text = r.post.text;
+      saved.textContent = 'Saved'; refresh(); renderReview(reviewBox, post.notes, r.validation, false);
+    } catch (err) { saved.textContent = 'Not saved'; toast(err.message); }
+  };
+  ta.addEventListener('input', () => { s2.dataset.done = 'false'; refresh(); saved.textContent = 'Editing...'; clearTimeout(timer); timer = setTimeout(saveText, 900); });
+  ta.addEventListener('blur', () => { clearTimeout(timer); saveText(); });
+  requestAnimationFrame(refresh);
+  /* emoji editor: click an emoji to replace it, or add one at your cursor. Suggestions fit the post, or describe one for AI. */
+  const emoBox = h('div', { class: 'emo' });
+  let emoSel = null, emoPage = 0, caret = null, aiList = [], aiQuery = '', aiBusy = false, panelOpen = false;
+  const suggestions = emojiSuggestions([post.text, post.layout, post.filename, currentClient() ? currentClient().name : ''].join(' '));
+  const rememberCaret = () => { caret = ta.selectionStart; };
+  ['keyup', 'click', 'select', 'focus', 'blur', 'input'].forEach(ev => ta.addEventListener(ev, rememberCaret));
+  const changed = () => { ta.dispatchEvent(new Event('input')); drawEmo(); };
+  function applyEmoji(emoji) {
+    const list = emojiMatches(ta.value);
+    if (emoSel !== null && list[emoSel]) {
+      const m = list[emoSel];
+      ta.value = ta.value.slice(0, m.index) + emoji + ta.value.slice(m.index + m[0].length);
+    } else {
+      const at = caret === null ? ta.value.length : Math.min(caret, ta.value.length);
+      const before = ta.value.slice(0, at), after = ta.value.slice(at);
+      const lead = before && !/[\s(]$/.test(before) ? ' ' : '';
+      const trail = after && !/^[\s.,!?;:)]/.test(after) ? ' ' : '';
+      ta.value = before + lead + emoji + trail + after;
+      caret = (before + lead + emoji).length;                 // the cursor moves to just after the new emoji
+      ta.setSelectionRange(caret, caret);
+      if (!window.matchMedia('(pointer: coarse)').matches) ta.focus();   // on phones, do not pop the keyboard up
+    }
+    changed();
+    ta.setSelectionRange(caret === null ? ta.value.length : caret, caret === null ? ta.value.length : caret);
+  }
+  function removeEmoji() {
+    const m = emojiMatches(ta.value)[emoSel];
+    if (!m) return;
+    const before = ta.value.slice(0, m.index).replace(/ +$/, ''), after = ta.value.slice(m.index + m[0].length);
+    ta.value = before + (after && !/^[\s.,!?]/.test(after) && before && !/\n$/.test(before) ? ' ' : '') + after.replace(/^ +(?=\n|$)/, '');
+    emoSel = null; changed();
+  }
+  async function findWithAi(query) {
+    query = query.trim(); if (!query || aiBusy) return;
+    aiBusy = true; aiQuery = query; drawEmo();
+    try {
+      const r = await api('/api/emoji/suggest', jsonOpts('POST', { query, context: ta.value.slice(0, 500) }));
+      aiList = r.emojis;
+    } catch (err) { aiList = []; toast(err.message); }
+    aiBusy = false; drawEmo();
+  }
+  function cursorLine() {
+    const at = caret === null ? ta.value.length : Math.min(caret, ta.value.length);
+    const before = ta.value.slice(Math.max(0, at - 26), at).replace(/\s+/g, ' '), after = ta.value.slice(at, at + 26).replace(/\s+/g, ' ');
+    return h('span', {}, 'Adds at your cursor: ', h('span', { class: 'cursor-ctx' }, (at > 26 ? '...' : '') + before, h('span', { class: 'cursor-mark' }), after + (at + 26 < ta.value.length ? '...' : '')));
+  }
+  function drawEmo() {
+    const list = emojiMatches(ta.value);
+    if (emoSel !== null && !list[emoSel]) emoSel = null;
+    const head = h('div', { class: 'emo-head' }, h('b', {}, 'Emojis'),
+      list.length ? list.map((m, i) => h('button', { class: 'emo-chip', type: 'button', 'aria-pressed': String(emoSel === i),
+        'aria-label': 'Change emoji ' + (i + 1) + ': ' + m[0], onclick: () => { emoSel = emoSel === i ? null : i; emoPage = 0; drawEmo(); } }, m[0]))
+        : h('span', { class: 'emo-none' }, 'No emojis in this post yet.'),
+      h('button', { class: 'btn small', type: 'button', onclick: () => { emoSel = null; emoPage = 0; panelOpen = true; if (caret === null) caret = ta.selectionStart; drawEmo(); } }, '+ Add emoji'));
+    const kids = [head];
+    if (emoSel !== null || panelOpen) {
+      const size = 12, start = (emoPage * size) % suggestions.length;
+      const shown = Array.from({ length: Math.min(size, suggestions.length) }, (_, i) => suggestions[(start + i) % suggestions.length]);
+      const chip = (e) => h('button', { class: 'emo-chip', type: 'button', 'aria-label': 'Use ' + e, onclick: () => applyEmoji(e) }, e);
+      const ai = h('input', { 'aria-label': 'Describe the emoji you want', placeholder: 'Describe it, like: clean water drop', autocomplete: 'off', value: aiQuery });
+      ai.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); findWithAi(ai.value); } };
+      const manual = h('input', { 'aria-label': 'Type or paste an emoji', placeholder: 'Type or paste', autocomplete: 'off' });
+      const useManual = () => {
+        const found = emojiMatches(manual.value)[0];
+        if (!found) { toast('That is not an emoji. On Windows press Win + . to open the emoji picker.'); manual.focus(); return; }
+        applyEmoji(found[0]); manual.value = '';
+      };
+      manual.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); useManual(); } };
+      kids.push(h('div', { class: 'emo-panel' },
+        h('p', { class: 'emo-title' }, emoSel !== null ? 'Replacing emoji ' + (emoSel + 1) + ' (' + list[emoSel][0] + ')' : cursorLine()),
+        h('div', { class: 'emo-sub' }, 'Describe the emoji you want'),
+        h('div', { class: 'emo-row first' }, ai,
+          h('button', { class: 'btn small primary', type: 'button', disabled: aiBusy, onclick: () => findWithAi(ai.value) }, aiBusy ? 'Finding...' : 'Find emoji')),
+        aiList.length ? h('div', { class: 'emo-grid ai' }, aiList.map(chip)) : null,
+        h('div', { class: 'emo-sub' }, 'Ideas for this post'),
+        h('div', { class: 'emo-grid' }, shown.map(chip)),
+        h('div', { class: 'emo-row' },
+          h('button', { class: 'btn small', type: 'button', onclick: () => { emoPage += 1; drawEmo(); } }, 'More ideas'),
+          manual, h('button', { class: 'btn small', type: 'button', onclick: useManual }, emoSel !== null ? 'Use mine' : 'Add mine'),
+          h('span', { class: 'grow' }),
+          emoSel !== null ? h('button', { class: 'btn small quiet danger', type: 'button', onclick: removeEmoji }, 'Remove this emoji') : null,
+          h('button', { class: 'btn small quiet', type: 'button', onclick: () => { emoSel = null; panelOpen = false; drawEmo(); } }, 'Close'))));
+    }
+    emoBox.replaceChildren(...kids);
+    refresh();
+  }
+  const copyPost = h('button', { class: 'btn small', type: 'button', onclick: async () => { clearTimeout(timer); await saveText(); await copyText(ta.value); done(s2, 'Post text copied'); } }, 'Copy text');
+  s2Body.append(h('div', { class: 'step-head' }, h('h3', {}, 'Post text'), h('div', { class: 'step-actions' }, copyPost)), ta,
+    h('div', { class: 'counter' }, chars, meter, emojis, saved), emoBox);
+  s2.append(s2Body); steps.append(s2);
+  drawEmo();
+
+  /* 3: button link */
+  const s3 = stepEl(n++, 'link'), s3Body = h('div', {});
+  s3Body.append(h('div', { class: 'step-head' }, h('h3', {}, 'Button link'),
+    h('div', { class: 'step-actions' },
+      h('button', { class: 'btn small', type: 'button', onclick: async () => { await copyText(post.cta_url); done(s3, 'Link copied'); } }, 'Copy link'),
+      h('a', { class: 'btn small quiet', href: post.cta_url, target: '_blank', rel: 'noopener noreferrer' }, 'Open page'))),
+    h('div', { class: 'link-value' }, h('span', { class: 'mark' }, post.cta_url)));
+  s3.append(s3Body); steps.append(s3);
+
+  /* review list (notes, warnings, errors) */
+  renderReview(reviewBox, post.notes, ctx.validation, ctx.needsReview);
+
+  /* what was written: post type, layout, last used (always visible) */
+  const facts = h('dl', { class: 'facts' },
+    h('div', { class: 'fact' }, h('dt', {}, 'Post type'),
+      h('dd', {}, h('span', { class: 'type-pill ' + typeKey }, post.post_type || 'Update'))),
+    h('div', { class: 'fact fact-wide' }, h('dt', {}, 'Layout'), h('dd', {}, post.layout || 'Not stated')),
+    h('div', { class: 'fact fact-wide' }, h('dt', {}, 'Last used for this client'),
+      h('dd', {}, h('small', { style: 'margin:0;font-size:14px' }, post.last_used || 'Not stated'))));
+  const chosen = ctx.applied && ctx.applied.length
+    ? h('p', { class: 'chosen' }, 'You asked for: ' + ctx.applied.map(x => x.field + ' ' + x.value + (x.random ? ' (random)' : '')).join(', ') + '.') : null;
+
+  /* tweak */
+  const input = h('input', { 'aria-label': 'Describe a change', placeholder: 'Or describe a change, like "mention emergency service"' });
+  const apply = h('button', { class: 'btn', type: 'button' }, 'Apply');
+  const chipEls = TWEAKS.map(([label, text]) => h('button', { class: 'chip', type: 'button', onclick: () => tweak(text) }, label));
+  const layoutSel = h('select', { id: 'relayoutSel', 'aria-label': 'Choose a new layout' },
+    h('option', { value: '' }, 'Choose a layout...'),
+    ...state.layouts.map(l => h('option', { value: l.id }, l.id + '. ' + l.name + (l.name === post.layout ? ' (current)' : ''))));
+  const layoutBtn = h('button', { class: 'btn', type: 'button', disabled: true }, 'Rewrite in this layout');
+  layoutSel.onchange = () => { layoutBtn.disabled = !layoutSel.value; };
+  layoutBtn.onclick = () => tweak('', layoutSel.value, null, layoutBtn);
+  const randomBtn = h('button', { class: 'btn', type: 'button', title: 'Pick a layout at random. It skips this post\'s layout and recent ones.' }, 'Random layout');
+  randomBtn.onclick = () => tweak('', 'random', null, randomBtn);
+  const paraBtns = [3, 4, 5, 6].map(n => h('button', { class: 'btn', type: 'button', 'data-n': n, onclick: (e) => tweak('', null, n, e.currentTarget) }, n + ' paragraphs'));
+  const paraNow = h('span', {});
+  function updateParas() {
+    paraNow.textContent = 'This post has ' + paraCount + ' paragraph' + (paraCount === 1 ? '' : 's') + '.';
+    paraBtns.forEach(b => { if (+b.dataset.n === paraCount) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+  }
+  parasReady = true; updateParas();
+  async function tweak(text, layout, paragraphs, busyBtn) {
+    if ((!text.trim() && !layout && !paragraphs) || state.busy) return;
+    clearTimeout(timer); await saveText();
+    const all = [...chipEls, apply, layoutBtn, layoutSel, randomBtn, ...paraBtns];
+    all.forEach(b => { b.disabled = true; });
+    busyBtn = busyBtn || apply; const label = busyBtn.textContent;
+    busyBtn.textContent = 'Working...';
+    try {
+      const body = layout ? { layout } : paragraphs ? { paragraphs } : { instruction: text };
+      const r = await api('/api/posts/' + post.id + '/edit', jsonOpts('POST', body)); renderResult(r); await loadHistory();
+      toast(layout ? 'Layout: ' + (r.post ? r.post.layout : 'changed') : paragraphs ? 'Rewritten in ' + paragraphs + ' paragraphs' : 'Post updated');
+    } catch (err) { toast(err.message); all.forEach(b => { b.disabled = false; }); layoutBtn.disabled = !layoutSel.value; busyBtn.textContent = label; }
+  }
+  apply.onclick = () => tweak(input.value);
+  input.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); tweak(input.value); } };
+  const relayoutBox = h('div', { class: 'relayout' }, h('h3', {}, 'Change layout'),
+    h('p', { class: 'hint' }, 'Same photo, facts and link. The post is rewritten in the layout you pick.'),
+    h('div', { class: 'relayout-row' }, layoutSel, layoutBtn, randomBtn));
+  const parasBox = h('div', { class: 'paras' }, h('h3', {}, 'Paragraphs'),
+    h('p', { class: 'hint' }, paraNow, ' Pick a number to rewrite the post with exactly that many.'),
+    h('div', { class: 'seg' }, paraBtns));
+  const tweakBox = h('div', { class: 'tweak' }, h('h3', {}, 'Change something'), h('div', { class: 'chips' }, chipEls), h('div', { class: 'tweak-row' }, input, apply));
+
+  const head = h('header', { class: 'sheet-head' },
+    h('div', {}, h('h2', {}, ctx.fresh ? 'Ready to paste' : 'Saved post'),
+      matchText ? h('p', { class: 'match ' + matchClass }, matchText, whyBtn ? ' ' : null, whyBtn) : null, whyBox),
+    h('div', { class: 'step-actions' },
+      h('button', { class: 'btn quiet', type: 'button', onclick: resetForm }, 'Start new post'),
+      ctx.fresh ? h('button', { class: 'btn', type: 'button', onclick: () => generate({ another: true }) }, 'Generate another') : null));
+
+  $('#resultPanel').replaceChildren(h('article', { class: 'sheet' }, head, facts, chosen, reviewBox, steps, parasBox, relayoutBox, tweakBox));
+  showTab('result');
+}
+
+function renderReview(box, notes, validation, needsReview) {
+  box.replaceChildren();
+  const errors = (validation && validation.errors) || [], warnings = (validation && validation.warnings) || [];
+  if (needsReview || errors.length) {
+    const p = state.current;
+    const keep = needsReview && p ? h('button', { class: 'btn small', type: 'button', onclick: async () => {
+      await api('/api/posts/' + p.id + '/accept', { method: 'POST' }); toast('Kept'); renderReview(box, notes, { errors: [], warnings }, false); await loadHistory(); } }, 'Keep this post') : null;
+    const discard = needsReview && p ? h('button', { class: 'btn small danger', type: 'button', onclick: () => deletePost(p.id) }, 'Discard') : null;
+    box.append(h('div', { class: 'banner bad', role: 'alert' },
+      h('p', {}, needsReview ? 'This post still breaks some rules after automatic fixes' : 'This edit breaks some rules'),
+      h('ul', {}, errors.map(e => h('li', {}, e))),
+      keep || discard ? h('div', { class: 'row' }, keep, discard) : null));
+  }
+  const items = [...(notes || []), ...warnings];
+  if (items.length) box.append(h('div', { class: 'banner warn' }, h('p', {}, 'Check before you post'), h('ul', {}, items.map(t => h('li', {}, t)))));
+}
+
+/* ---------- history ---------- */
+async function loadHistory() {
+  state.posts = state.clientId ? await api('/api/clients/' + state.clientId + '/posts') : [];
+  renderHistory();
+}
+function renderHistory() {
+  $('#histCount').textContent = state.posts.length ? ' ' + state.posts.length : '';
+  const q = $('#histSearch').value.trim().toLowerCase();
+  const posts = state.posts.filter(p => !q || [p.filename, p.text, p.layout].join(' ').toLowerCase().includes(q));
+  const list = $('#histList');
+  if (!posts.length) {
+    list.replaceChildren(h('li', { class: 'empty', style: 'padding:24px 4px' },
+      h('p', {}, state.posts.length ? 'No posts match that search.' : 'No posts for this client yet. Your first one will appear here.')));
+    return;
+  }
+  list.replaceChildren(...posts.map(p => h('li', { class: 'hist-item' },
+    p.has_image ? h('img', { src: '/api/posts/' + p.id + '/image', alt: '', loading: 'lazy' }) : h('div', { class: 'noimg' }),
+    h('div', { style: 'min-width:0' },
+      h('p', { class: 'hist-title' }, p.filename || '(no filename)', p.status === 'flagged' ? h('span', { class: 'tag' }, 'Needs review') : null),
+      h('p', { class: 'hist-snippet' }, p.text.split('\n')[0]),
+      h('p', { class: 'hist-meta' }, [fmtDate(p.created_at), p.post_type || null, p.layout || null, p.chars + ' characters'].filter(Boolean).join(', ')),
+      h('div', { class: 'hist-actions' },
+        h('button', { class: 'btn small', type: 'button', onclick: () => { state.current = p; renderSheet(p, { needsReview: p.status === 'flagged', validation: { errors: p.status === 'flagged' ? ['It was flagged when it was written.'] : [], warnings: [] } }); } }, 'Open'),
+        h('button', { class: 'btn small quiet', type: 'button', onclick: async () => { await copyText(p.text); toast('Post text copied'); } }, 'Copy text'),
+        h('button', { class: 'btn small quiet danger', type: 'button', onclick: () => deletePost(p.id) }, 'Delete'))))));
+}
+$('#histSearch').addEventListener('input', renderHistory);
+async function deletePost(id) {
+  if (!confirm('Delete this post and its photo from the history?')) return;
+  await api('/api/posts/' + id, { method: 'DELETE' });
+  if (state.current && state.current.id === id) { state.current = null; renderEmpty(); }
+  toast('Post deleted'); await loadHistory();
+}
+
+/* ---------- start ---------- */
+renderDrop(); renderEmpty();
+loadStatus().catch(() => {});
+loadOptions().catch(() => {});
+loadClients().then(() => { if (!state.clients.length) openClientDialog(null); }).catch(err => renderError(err.message));
+</script>
+</body>
+</html>
